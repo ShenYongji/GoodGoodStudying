@@ -12,13 +12,22 @@ NoSQL - Not Only SQL 非关系型数据库
 <hr />
 
 # Redis
-Redis是一款内存高速缓存数据库。Redis全称为：Remote Dictionary Server（远程数据服务），使用C语言编写，单线程模型，操作都是原子的。Redis是一个key-value存储系统（键值存储系统），支持丰富的数据类型，比如字符串(String), 哈希(Map), 列表(list), 集合(sets) 和 有序集合(sorted sets)等类型。
+Redis是一款内存高速缓存数据库。Redis全称为：Remote Dictionary Server（远程数据服务），使用C语言编写，单线程模型，操作都是原子的。Redis是一个key-value存储系统（键值存储系统 Hash Table），支持丰富的数据类型，比如字符串(String), 哈希(Map), 列表(list), 集合(sets) 和 有序集合(sorted sets)等类型。
 
 ### Redis特征
 1. 速度快
 2. 持久化： 数据保存在内存中，对数据进行异步更新。
-    * RDB
-    * AOF 
+    * RDB - Redis DataBase: 在不同的时间点，将redis存储的数据生成快照并存储到磁盘等介质上
+    * AOF - Append Only File: 将redis执行过的所有写指令记录下来，在下次redis重新启动时，只要把这些写指令从前到后再重复执行一遍，实现数据恢复
+    <br/>
+    RDB vs AOF: 
+    <br/>
+    如果需要进行大规模数据的恢复，且对于数据恢复的完整性不是非常敏感，那RDB方式要比AOF方式更加的高效。缺点：对数据的完整性非常敏感，那么RDB方式就不太适合你，因为即使你每5分钟都持久化一次，当redis故障时，仍然会有近5分钟的数据丢失。
+    <br/>
+    AOF持久化策略是每秒钟fsync一次（fsync是指把缓存中的写指令记录到磁盘中），因为在这种情况下，redis仍然可以保持很好的处理性能，即使redis故障，也只会丢失最近1秒钟的数据
+    <br>
+    1、RDB需要定时持久化，风险是可能会丢两次持久之间的数据，量可能很大。
+    2、AOF每秒fsync一次指令硬盘，如果硬盘IO慢，会阻塞父进程；风险是会丢失1秒多的数据；在Rewrite过程中，主进程把指令存到mem-buffer中，最后写盘时会阻塞主进程。
 3. 多种数据结构
     1. Strings
     2. Hash Tables
@@ -57,6 +66,39 @@ Redis是一款内存高速缓存数据库。Redis全称为：Remote Dictionary S
 <br/>
 堆内缓存一般性能更好，远程缓存需要套接字传输.用户级别缓存尽量采用堆内缓存,大数据量尽量采用远程缓存，服务节点化原则
 <hr/>
+
+### Redis的数据结构
+Redis允许的key最大长度是512MB,value的最大长度也是512MB
+
+1. String
+2. List
+3. Hash
+4. Set
+5. Sorted Set
+6. Bitmap
+7. HyperLogLog
+<hr/>
+
+### 热键 - Hot Key
+
+热键 - 突然大量的请求去访问Redis上某个特定的key，导致流量集中，从而是Redis的服务器宕机。如果宕机之后会直接访问数据库。
+
+1. 判断Hot Key
+    <br/>
+    1. 凭借业务经验，提前预估hot key
+    <br/>
+    比如商品秒杀时候，可以预判什么是Hot key
+    2. 在客户端进行收集
+    <br/>
+    在操作Redis之前，加入数据统计的功能。
+    3. 在proxy层做收集
+    <br/>
+    设置一个Proxy作为统一入口，在Proxy上统计
+    4. 用Redis自带命令
+    <br/>
+    
+
+<hr />
 
 ### Redis问题
 
